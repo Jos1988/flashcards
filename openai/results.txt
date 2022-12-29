@@ -1,0 +1,10 @@
+What is the capital of France?: 0 correct, 1 incorrect
+What is the capital of the UK?: 0 correct, 1 incorrect
+What is the capital of the US?: 0 correct, 1 incorrect
+What is the capital of Germany?: 0 correct, 1 incorrect
+What is the capital of Italy?: 0 correct, 1 incorrect
+What is the capital of Spain?: 0 correct, 1 incorrect
+What is the capital of Russia?: 1 correct, 0 incorrect
+What is the capital of China?: 0 correct, 1 incorrect
+What is the capital of Japan?: 1 correct, 0 incorrect
+What is the capital of Brazil?: 0 correct, 1 incorrect
