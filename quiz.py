@@ -2,17 +2,37 @@ import csv
 import json
 import jsonpickle
 from os import listdir, path
-from typing import List
+from typing import List, Union
 
 
 class Question:
+    """
+    Class representing a single quiz question, including the correct answer, as well as the number of times the question has been answered correctly
+    and incorrectly.
+    """
+
     def __init__(self, question: str, correct_answer: str) -> None:
+        """
+        Args:
+            question: The text of the question.
+            correct_answer: The correct answer to the question.
+        """
         self.question = question
         self.correct_answer = correct_answer
         self.num_correct = 0
         self.num_incorrect = 0
 
     def check_answer(self, user_answer: str) -> bool:
+        """
+        Check if the user's answer is correct and update the question's
+        num_correct and num_incorrect values accordingly.
+
+        Args:
+            user_answer: The user's answer to the question.
+
+        Returns:
+            True if the user's answer is correct, False otherwise.
+        """
         if user_answer.lower() == self.correct_answer.lower():
             self.num_correct += 1
             return True
@@ -21,13 +41,33 @@ class Question:
 
 
 class QuestionsSaver:
+    """
+    Class for saving and loading a list of quiz questions to and from a file.
+    """
+
     def __init__(self, save_file: str):
+        """
+        Args:
+            save_file: The file path to save the questions to.
+        """
         self.save_file = save_file
 
     def is_saved(self) -> bool:
+        """
+        Check if the save file exists.
+
+        Returns:
+            True if the save file exists, False otherwise.
+        """
         return path.exists(self.save_file)
 
     def load_save(self) -> List[Question]:
+        """
+        Load the saved questions from the save file.
+
+        Returns:
+            A list of Question objects loaded from the save file.
+        """
         if not self.is_saved():
             print('Quiz has no save.')
             return []
@@ -36,20 +76,34 @@ class QuestionsSaver:
             return jsonpickle.decode(json.load(file), classes=Question)
 
     def save(self, questions: List[Question]):
+        """
+        Save the given list of questions to the save file.
+
+        Args:
+            questions: A list of Question objects to save.
+        """
         with open(self.save_file, 'w') as file:
             json.dump(jsonpickle.encode(questions), file)
 
 
 class Quiz:
-    """ Quiz object for taking the quiz, and persisting results. """
+    """
+    Quiz object for taking the quiz, and persisting results.
+    """
 
     def __init__(self, questions: List[Question], saver: QuestionsSaver, min_correct: int = 1) -> None:
         """
+        Initialize the Quiz object with a list of questions, a QuestionsSaver object, and an optional minimum number of correct answers required to
+        consider a question "learned". If a save file exists, the quiz will be initialized with the saved questions.
+
         Args:
-             questions: list of questions.
-             saver: saver object for loading and saving quiz.
-             min_correct: Minimum number of times an answer has to be answered correctly for the question to be considered learned. This will prevent the
-             question from being asked again.
+            questions: A list of Question objects representing the questions
+                       in the quiz.
+            saver: A QuestionsSaver object for loading and saving the quiz.
+            min_correct: The minimum number of times an answer must be given
+                         correctly to consider the question "learned". This
+                         will prevent the question from being asked again.
+                         Defaults to 1.
         """
         self.questions = questions
         self.saver = saver
@@ -58,6 +112,12 @@ class Quiz:
             self.questions = self.saver.load_save()
 
     def ask_question(self, question: Question):
+        """
+        Ask the user the given question and check if their answer is correct.
+
+        Args:
+            question: The Question object to ask.
+        """
         print(question.question)
         user_answer = input("Enter your answer: ")
         is_correct = question.check_answer(user_answer)
@@ -67,17 +127,40 @@ class Quiz:
 
         print(f"Incorrect, the answer was: {question.correct_answer}.")
 
-    def get_incorrect_questions(self) -> list[Question | None]:
+    def get_incorrect_questions(self) -> List[Union[Question, None]]:
+        """
+        Get a list of all questions that have not been answered correctly at least min_correct times.
+
+        Returns:
+            A list of Question objects that have not been answered correctly
+            at least min_correct times.
+        """
         return [question for question in self.questions if question.num_correct < self.min_correct]
 
     def get_quiz_score(self):
+        """
+        Get the number of questions in the quiz that have been answered
+        correctly at least min_correct times.
+
+        Returns:
+            The number of questions in the quiz that have been answered
+            correctly at least min_correct times.
+        """
         return sum([int(question.num_correct >= self.min_correct) for question in self.questions])
 
     def print_score(self):
+        """
+        Print the number of questions in the quiz that have been answered
+        correctly at least min_correct times.
+        """
         score = self.get_quiz_score()
         print(f'{score} correct questions out of {len(self.questions)}')
 
     def take_quiz(self) -> None:
+        """
+        Take the quiz, asking all questions that have not been answered correctly at least min_correct times, until there are no more
+        such questions. Save the quiz after each question.
+        """
         while True:
             incorrect_questions = self.get_incorrect_questions()
             if len(incorrect_questions) == 0:
@@ -93,12 +176,24 @@ class Quiz:
         self.print_score()
 
     def write_results(self, filename: str) -> None:
+        """
+        Print results from the quiz to the results folder.
+        """
         with open(filename, "w") as f:
             for q in self.questions:
                 f.write(f"{q.question}: {q.num_correct} correct, {q.num_incorrect} incorrect\n")
 
 
 def load_questions(filename: str) -> List[Question]:
+    """
+    Load a list of quiz questions from a CSV file.
+
+    Args:
+        filename: The file path of the CSV file to load questions from.
+
+    Returns:
+        A list of Question objects representing the questions in the CSV file.
+    """
     questions = []
     with open(filename, 'r') as f:
         reader = csv.reader(f)
@@ -110,7 +205,13 @@ def load_questions(filename: str) -> List[Question]:
     return questions
 
 
-def ask_quiz():
+def ask_quiz() -> str:
+    """
+    Print a list of available quizzes and ask the user to choose one.
+
+    Returns:
+        The file name of the selected quiz.
+    """
     print('Quizzes available:')
     available_quizzes = {i: quiz for i, quiz in enumerate(listdir('data/questions')) if '.csv' in quiz}
 
