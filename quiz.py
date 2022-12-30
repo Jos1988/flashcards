@@ -1,8 +1,11 @@
 import csv
 import json
-import jsonpickle
+import random
 from os import listdir, path
 from typing import List, Union
+
+import jsonpickle
+import Levenshtein as lev
 
 
 class Question:
@@ -27,13 +30,15 @@ class Question:
         Check if the user's answer is correct and update the question's
         num_correct and num_incorrect values accordingly.
 
+        Note: The given answer may deviate a little from the correct answer to allow for typing errors.
+
         Args:
             user_answer: The user's answer to the question.
 
         Returns:
             True if the user's answer is correct, False otherwise.
         """
-        if user_answer.lower() == self.correct_answer.lower():
+        if lev.distance(user_answer.lower(), self.correct_answer.lower()) <= 1:
             self.num_correct += 1
             return True
         self.num_incorrect += 1
@@ -91,7 +96,7 @@ class Quiz:
     Quiz object for taking the quiz, and persisting results.
     """
 
-    def __init__(self, questions: List[Question], saver: QuestionsSaver, min_correct: int = 1) -> None:
+    def __init__(self, questions: List[Question], saver: QuestionsSaver, result_path: str, min_correct: int = 1) -> None:
         """
         Initialize the Quiz object with a list of questions, a QuestionsSaver object, and an optional minimum number of correct answers required to
         consider a question "learned". If a save file exists, the quiz will be initialized with the saved questions.
@@ -100,6 +105,7 @@ class Quiz:
             questions: A list of Question objects representing the questions
                        in the quiz.
             saver: A QuestionsSaver object for loading and saving the quiz.
+            result_path: Path to file where quiz results are stored in a readable format.
             min_correct: The minimum number of times an answer must be given
                          correctly to consider the question "learned". This
                          will prevent the question from being asked again.
@@ -108,6 +114,7 @@ class Quiz:
         self.questions = questions
         self.saver = saver
         self.min_correct = min_correct
+        self.result_path = result_path
         if self.saver.is_saved():
             self.questions = self.saver.load_save()
 
@@ -121,11 +128,14 @@ class Quiz:
         print(question.question)
         user_answer = input("Enter your answer: ")
         is_correct = question.check_answer(user_answer)
-        if is_correct:
-            print("Correct!")
+        if not is_correct:
+            print(f"Incorrect, the answer was: {question.correct_answer}.")
             return
 
-        print(f"Incorrect, the answer was: {question.correct_answer}.")
+        print("Correct!")
+
+        if question.num_correct >= self.min_correct:
+            print(f'Question correct {self.min_correct} times, it wont be asked again.')
 
     def get_incorrect_questions(self) -> List[Union[Question, None]]:
         """
@@ -146,7 +156,7 @@ class Quiz:
             The number of questions in the quiz that have been answered
             correctly at least min_correct times.
         """
-        return sum([int(question.num_correct >= self.min_correct) for question in self.questions])
+        return sum([question.num_correct for question in self.questions])
 
     def print_score(self):
         """
@@ -154,7 +164,15 @@ class Quiz:
         correctly at least min_correct times.
         """
         score = self.get_quiz_score()
-        print(f'{score} correct questions out of {len(self.questions)}')
+        print(f'{score} correct answers out of {len(self.questions) * self.min_correct} required correct answers')
+
+    def write_results(self) -> None:
+        """
+        Print results from the quiz to the 'results' folder.
+        """
+        with open(self.result_path, "w") as f:
+            for question in self.questions:
+                f.write(f"{question.question}: {question.num_correct} correct, {question.num_incorrect} incorrect\n")
 
     def take_quiz(self) -> None:
         """
@@ -163,6 +181,7 @@ class Quiz:
         """
         while True:
             incorrect_questions = self.get_incorrect_questions()
+            random.shuffle(incorrect_questions)
             if len(incorrect_questions) == 0:
                 break
 
@@ -170,18 +189,12 @@ class Quiz:
                 self.saver.save(self.questions)
                 self.ask_question(question)
                 self.print_score()
+                self.write_results()
 
         self.saver.save(self.questions)
         print(f'-- finished. --')
         self.print_score()
-
-    def write_results(self, filename: str) -> None:
-        """
-        Print results from the quiz to the results folder.
-        """
-        with open(filename, "w") as f:
-            for q in self.questions:
-                f.write(f"{q.question}: {q.num_correct} correct, {q.num_incorrect} incorrect\n")
+        self.write_results()
 
 
 def load_questions(filename: str) -> List[Question]:
@@ -235,7 +248,7 @@ def main() -> None:
 
     questions = load_questions('data/questions/' + chosen_quiz_file)
     saver = QuestionsSaver(save_file=f"data/saves/{username}_{chosen_quiz_file.replace('.csv', '')}_save.json")
-    quiz = Quiz(questions, saver,  min_correct=2)
+    quiz = Quiz(questions, saver, result_path=f"data/results/{username}_{chosen_quiz_file.replace('.csv', '')}_results.txt",  min_correct=2)
     quiz.take_quiz()
 
 

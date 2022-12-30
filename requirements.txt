@@ -1,1 +1,2 @@
 jsonpickle==3.0.*
+python-Levenshtein==0.20.*
