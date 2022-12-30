@@ -1,1 +1,1 @@
-jsonpickle
+jsonpickle==3.0.*
