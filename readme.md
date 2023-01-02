@@ -1,10 +1,10 @@
 # Readme
 This is a simple script to quiz myself for a test.
 
-The initial code was written by openai's chatbot based on the GPT 3.5 model. Check out the `conversation_with_openai_chat.md` file to see the full chat and the `openai` folder to see the program written by openai. 
+The initial code was written by openAI's ChatGPT. Check out the `conversation_with_openai_chat.md` file to see the full chat and the `openai` folder to see the program written by openai. 
 
 The quiz in the main folder is an adaptation of the openai version. 
-Here is used the chatbot to:
+Here is used the ChatGPT to:
  - Ask the thing I usually use Google or stack overflow for.
  - Add doc comments.
  - Create a small example quiz file.

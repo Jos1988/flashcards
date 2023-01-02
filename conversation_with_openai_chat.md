@@ -1,4 +1,4 @@
-# Conversation with [openai's GPT 3.5 chatbot](https://chat.openai.com/chat).
+# Conversation with [ChatGPT](https://openai.com/blog/chatgpt/).
 
 >Q: In python create an object that represents a question, which includes a correct answer, number of times correctly answered and number of times incorrectly answered.
 
