@@ -96,7 +96,7 @@ class Quiz:
     Quiz object for taking the quiz, and persisting results.
     """
 
-    def __init__(self, questions: List[Question], saver: QuestionsSaver, result_path: str, min_correct: int = 1) -> None:
+    def __init__(self, questions: List[Question], saver: QuestionsSaver, result_path: str, min_correct: int = 1, allow_overrule: bool = False) -> None:
         """
         Initialize the Quiz object with a list of questions, a QuestionsSaver object, and an optional minimum number of correct answers required to
         consider a question "learned". If a save file exists, the quiz will be initialized with the saved questions.
@@ -110,13 +110,17 @@ class Quiz:
                          correctly to consider the question "learned". This
                          will prevent the question from being asked again.
                          Defaults to 1.
+            allow_overrule: If True, the user is presented with the option to overrule a wrong answer.
         """
         self.questions = questions
         self.saver = saver
         self.min_correct = min_correct
         self.result_path = result_path
+        self.allow_overrule = allow_overrule
         if self.saver.is_saved():
             self.questions = self.saver.load_save()
+
+        self.manual = True
 
     def ask_question(self, question: Question):
         """
@@ -125,15 +129,33 @@ class Quiz:
         Args:
             question: The Question object to ask.
         """
-        print(question.question)
+        print("--> " + question.question)
+
         user_answer = input("Enter your answer: ")
         is_correct = question.check_answer(user_answer)
-        if not is_correct:
+
+        if self.manual and is_correct == False:
+            print(f"expected answer: {question.correct_answer}")
+            is_correct = input("correct? (y/N)") == 'y'
+            if is_correct:
+                question.num_correct += 1
+
+            if not is_correct:
+                question.num_incorrect += 1
+
+        if not is_correct and not self.manual:
             print(f"Incorrect, the answer was: {question.correct_answer}.")
+
+            overrule = input("Overrule? (y/N)")
+            if overrule.lower() != 'y':
+                question.num_correct += 1
+                question.num_incorrect -= 1
+                return
+
+        if not is_correct:
             return
 
         print("Correct!")
-
         if question.num_correct >= self.min_correct:
             print(f'Question correct {self.min_correct} times, it wont be asked again.')
 
@@ -209,7 +231,7 @@ def load_questions(filename: str) -> List[Question]:
     """
     questions = []
     with open(filename, 'r') as f:
-        reader = csv.reader(f)
+        reader = csv.reader(f, quotechar='"')
         for row in reader:
             question = row[0]
             correct_answer = row[1]
@@ -233,7 +255,7 @@ def ask_quiz() -> str:
         print(f"{i + 1}: {quiz.replace('.csv', '')}")
     while True:
         choice = int(input("Enter the number of the file you want to choose: "))
-        if choice not in available_quizzes.keys():
+        if int(choice - 1) in list(available_quizzes.keys()):
             chosen_quiz = available_quizzes[choice - 1]
             break
 
