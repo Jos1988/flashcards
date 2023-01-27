@@ -231,7 +231,7 @@ def load_questions(filename: str) -> List[Question]:
     """
     questions = []
     with open(filename, 'r') as f:
-        reader = csv.reader(f, quotechar='"')
+        reader = csv.reader(f, quotechar='"', quoting=csv.QUOTE_ALL, delimiter=',', skipinitialspace=True)
         for row in reader:
             question = row[0]
             correct_answer = row[1]
